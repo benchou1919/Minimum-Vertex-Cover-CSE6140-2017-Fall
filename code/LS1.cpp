@@ -25,7 +25,8 @@ LS1::LS1(Graph graph, std::string filename, int cutoff_time, int seed) {
     this->last_cnt = 0;
 
     /*** File Pointers ***/
-    // TODO:
+    // Solution file: store the best solution.
+    // trace file: store the trace each time we find a better solution
     filename = filename.substr(8, filename.length() - 14);
     const char *fname = filename.c_str();
 
@@ -33,7 +34,7 @@ LS1::LS1(Graph graph, std::string filename, int cutoff_time, int seed) {
     char trace_filename[100];
     sprintf(solution_filename, "output/%s_LS1_%d_%d.sol", fname, cutoff_time, seed);
     sprintf(trace_filename, "output/%s_LS1_%d_%d.trace", fname, cutoff_time, seed);
-    // cout << trace_filename << " " << solution_filename << endl;
+
     this->solution_fp = fopen(solution_filename, "w");
     this->trace_fp = fopen(trace_filename, "w");
 
@@ -41,13 +42,15 @@ LS1::LS1(Graph graph, std::string filename, int cutoff_time, int seed) {
 
     std::vector<int> v(graph.getNumNode());
     std::iota(std::begin(v), std::end(v), 0);
+    // Vertex Cover
     this->VC = v;
 
     /*** Record the best so far ***/
     this->bestVC = v;
-    // _edgeDeletion();
 }
 
+// Approximation algorithm to initialize a valid vertex cover
+// and add it to this->bestVC
 void LS1::edgeDeletion() {
 
     std::unordered_set<int> visited;
@@ -65,14 +68,21 @@ void LS1::edgeDeletion() {
     shuffle(randoms.begin(), randoms.end(), std::default_random_engine(this->seed));
     this->seed += 10;
 
-
+    // Pick an edge (u, v) each time, delete all the edges connected
+    // to either u or v.
+    // repeat until no edge left
     for(int i = 0; i < N; i ++) {
         int u = randoms[i];
+
+        // Visited means deleted, which means all the edges connected to it
+        // can be ignored
         if(visited.count(u + 1) > 0){
             continue;
         }
         vector<int> edges = this->_graph.getEdges(u);
+
         for(int v : edges) {
+            // search until there is an edge that both ends are not deleted
             if(visited.count(v) > 0)
                 continue;
             visited.insert(u + 1);
@@ -86,14 +96,15 @@ void LS1::edgeDeletion() {
 }
 
 vector<int> LS1::hillClimb() {
-    //TODO:
     // Sort vertices by their degrees
     vector<int> sortedCover = _sortCover();
+
     // Construct a set
     std::unordered_set<int> coverSet(sortedCover.begin(), sortedCover.end());
     clock_t elapsed = clock() - this->begin_time;
     for(int i = 0; i < sortedCover.size() && (elapsed / 1000000.0) < this->cutoff_time - 1; i ++) {
         elapsed = clock() - this -> begin_time;
+        // delete the vertex if it will remain a vertex cover after deleting the vertex
         if(_checkCovered(coverSet, sortedCover[i])) {
             coverSet.erase(sortedCover[i]);
             _writeTrace(elapsed / 1000000.0, coverSet.size());
@@ -110,7 +121,6 @@ vector<int> LS1::hillClimb() {
         _writeTrace((float)elapsed / 1000000.0, (int)coverSet.size());
     }
     return this->VC;
-    // std::cout << elapsed/1000000.0 << " " << coverSet.size() << endl;
 }
 
 

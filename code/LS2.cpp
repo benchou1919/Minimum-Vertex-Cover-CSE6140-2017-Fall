@@ -36,7 +36,7 @@ LS2::LS2(Graph graph, std::string filename, int cutoff_time, int seed) {
         tmp[i] = i;
     std::unordered_set<int> tmpSet(tmp.begin(), tmp.end());
     this->bestSet = tmpSet;
-    // cout << "INITIALIZE: " << this->bestSet.size() << endl;
+
     this->prev_cost = INT_MAX;
     std::vector<std::pair<int, int>> pairs;
     this->uncovered_edges = pairs;
@@ -74,7 +74,6 @@ std::vector<int> LS2::approx() {
 
     std::unordered_set<std::pair<int, int>, boost::hash< std::pair<int, int> > > uncovered_edges;
     std::unordered_set<int> coverSet;
-
 
     int N = this->_graph.getNumNode();
     for(int i = 0; i < N; i ++) {
@@ -134,7 +133,7 @@ std::vector<int> LS2::approx() {
 }
 
 void LS2::SimulatedAnnealing() {
-
+    // The main code of simulated annealing algorithm
     std::unordered_set<int> coverSet(this->VC.begin(), this->VC.end());
 
     std::unordered_set<int> last;
@@ -179,16 +178,18 @@ void LS2::SimulatedAnnealing() {
 		temperature--;
         elapsed = clock() - this -> begin_time;
     }
-
-    // cout << "IS VERTEX COVER: " << isVertexCover(this->bestSet) << endl;
-    // cout << "VERTEX COVER SIZE: " << this->bestSet.size() << endl;
 }
 
+
+// remove all the vertices with zero cost
+// namely, removing the vertex won't affect the vertex cover
 void LS2::removeUseless(std::unordered_set<int> &coverSet) {
     vector<int> tmp(coverSet.begin(), coverSet.end());
     for(int node : tmp) {
         if(this->cost[node] == 0) {
             vector<int> edges = this->_graph.getEdges(node - 1);
+            // Deleting the node makes the costs of all the vertices
+            // in the neighbor plus 1
             for(int v : edges) {
                 this->cost[v] ++;
             }
@@ -201,6 +202,8 @@ void LS2::removeUseless(std::unordered_set<int> &coverSet) {
     }
 }
 
+
+// Remove the vertex with smallest cost
 void LS2::removeSmallest(std::unordered_set<int> &coverSet) {
     vector<int> tmp(coverSet.begin(), coverSet.end());
     int min_cost = INT_MAX;
@@ -236,13 +239,13 @@ void LS2::addRandom(std::unordered_set<int> &coverSet) {
         }
     }
     this->cost[v] = cost;
-    // cout << "Before: " << edges.size() << endl;
+
     for(auto e : edges) {
         if(e.first != v && e.second != v) {
             new_edges.push_back(e);
         }
     }
-    // cout << "After: " << new_edges.size() << endl;
+
     this->uncovered_edges = new_edges;
 
 }
@@ -308,9 +311,6 @@ bool LS2::_checkCovered(std::unordered_set<int> coverSet, int vertex) {
             if(this->cost.count(v)) {
                 this->cost[v] ++;
             }
-            // else {
-            //     cout << "This should not happen" << endl;
-            // }
         }
     }
     return ret;
@@ -335,9 +335,6 @@ int LS2::getCntDiff() {
 }
 
 void LS2::_writeTrace(double time_elapsed, std::unordered_set<int> coverSet) {
-    // Write to the trace file.
-    // if(solution < this->bestSet.size()) {
-    // cout << "sizes: " << coverSet.size() << " " << this->bestSet.size() << endl;
     if(coverSet.size() < this->bestSet.size()) {
 
         fprintf(this->trace_fp, "%llf, %d\n", time_elapsed, coverSet.size());
@@ -345,8 +342,6 @@ void LS2::_writeTrace(double time_elapsed, std::unordered_set<int> coverSet) {
         this->last_update = clock();
         this->bestSet = coverSet;
     }
-
-    // }
 
 }
 
